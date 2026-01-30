@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Learning Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>YouLearn</span>
+                </div>
+                <div class="pomodoro-nav-container">
+                    <div class="pomodoro-nav-timer">
+                        <div class="pomodoro-nav-display">
+                            <span class="pomodoro-nav-time" id="pomodoroTime">25:00</span>
+                            <span class="pomodoro-nav-mode" id="pomodoroMode">Work</span>
+                        </div>
+                        <div class="pomodoro-nav-controls">
+                            <button class="pomodoro-nav-btn" id="pomodoroStartPause" title="Start/Pause">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="pomodoro-nav-btn" id="pomodoroReset" title="Reset">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pomodoro-nav-settings">
+                        <input type="number" class="pomodoro-nav-input" id="pomodoroWorkTime" value="25" min="1" max="60" title="Work Time (minutes)">
+                        <input type="number" class="pomodoro-nav-input" id="pomodoroRestTime" value="5" min="1" max="30" title="Rest Time (minutes)">
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="panel-toggle-btn" id="panelToggleBtn" title="Toggle Side Panel">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="upload-btn" id="uploadBtn">
+                        <i class="fas fa-upload"></i>
+                        Upload Video
+                    </button>
+                    <input type="file" id="videoInput" accept="video/mp4,video/webm,video/mkv,video/x-matroska,.mkv" multiple style="display: none;">
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Resize Divider -->
+            <div class="resize-divider" id="resizeDivider"></div>
+
+            <!-- Video Section -->
+            <section class="video-section" id="videoSection">
+                <div class="video-container">
+                    <!-- Video Player -->
+                    <div class="video-player-wrapper" id="videoPlayerWrapper">
+                        <video id="videoPlayer" class="video-player">
+                            <source src="" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+
+                        <!-- Custom Video Controls -->
+                        <div class="video-controls">
+                            <div class="controls-row">
+                                <button class="control-btn" id="playPauseBtn">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="control-btn" id="rewindBtn">
+                                    <i class="fas fa-backward"></i>
+                                    <span>10s</span>
+                                </button>
+                                <button class="control-btn" id="forwardBtn">
+                                    <i class="fas fa-forward"></i>
+                                    <span>10s</span>
+                                </button>
+                                <div class="time-display">
+                                    <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+                                </div>
+                                <div class="speed-control">
+                                    <select id="speedSelect">
+                                        <option value="0.5">0.5x</option>
+                                        <option value="0.75">0.75x</option>
+                                        <option value="1" selected>1x</option>
+                                        <option value="1.25">1.25x</option>
+                                        <option value="1.5">1.5x</option>
+                                        <option value="1.75">1.75x</option>
+                                        <option value="2">2x</option>
+                                    </select>
+                                </div>
+                                <div class="volume-control">
+                                    <button class="control-btn" id="volumeBtn">
+                                        <i class="fas fa-volume-up"></i>
+                                    </button>
+                                    <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+                                </div>
+                                <button class="control-btn" id="fullscreenBtn">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                            <div class="progress-bar" id="progressBar">
+                                <div class="progress-filled" id="progressFilled"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Info -->
+                    <div class="video-info">
+                        <h2 id="videoTitle">Select a video to start learning</h2>
+                        <p id="videoDescription">Upload your lecture videos and start learning with AI assistance</p>
+                    </div>
+
+                    <!-- Video List -->
+                    <div class="video-list" id="videoList">
+                        <div class="video-list-header">
+                            <h3>Your Videos</h3>
+                            <span class="video-count" id="videoCount">0 videos</span>
+                        </div>
+                        <div class="video-grid" id="videoGrid">
+                            <!-- Videos will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tools Section -->
+            <section class="tools-section" id="toolsSection">
+                <!-- Tool Selection -->
+                <div class="tool-selector">
+                    <button class="tool-tab active" data-tool="notes">
+                        <i class="fas fa-sticky-note"></i>
+                        Notes
+                    </button>
+                    <button class="tool-tab" data-tool="ask">
+                        <i class="fas fa-comments"></i>
+                        Ask
+                    </button>
+                </div>
+
+                <!-- Notes Tool -->
+                <div class="notes-tool" id="notesTool">
+                    <div class="notes-header">
+                        <h4>Notes</h4>
+                        <div class="notes-toolbar">
+                            <button class="toolbar-btn" id="boldBtn" title="Bold (Ctrl+B)">
+                                <i class="fas fa-bold"></i>
+                            </button>
+                            <button class="toolbar-btn" id="bulletBtn" title="Bullet Points (Ctrl+Shift+B)">
+                                <i class="fas fa-list-ul"></i>
+                            </button>
+                            <button class="toolbar-btn" id="saveNotesBtn" title="Save Notes">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="toolbar-btn" id="clearNotesBtn" title="Clear Notes">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="notes-editor" contenteditable="true" id="notesEditor"></div>
+                </div>
+
+                <!-- Ask Tool -->
+                <div class="ask-tool" id="askTool" style="display: none;">
+                    <div class="ask-header">
+                        <h4>Ask AI Assistant</h4>
+                        <div class="ask-settings">
+                            <input type="password" id="apiKeyInput" placeholder="Enter API Key" class="api-key-input">
+                            <button id="saveApiKeyBtn" class="save-api-btn">Save Key</button>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" placeholder="Ask anything..." class="chat-input">
+                        <button id="sendBtn" class="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
