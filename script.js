@@ -6,12 +6,15 @@ class YouLearningPlatform {
         this.isResizing = false;
         this.currentSplit = 80;
         this.isPanelVisible = true;
+        this.currentPlaybackRate = 1;
+        this.videoAspectRatio = 16/9;
 
         this.initializeElements();
         this.loadFromStorage();
         this.bindEvents();
         this.initializeVideoPlayer();
         this.setInitialSplit();
+        this.setupResponsiveVideo();
     }
 
     initializeElements() {
@@ -77,6 +80,7 @@ class YouLearningPlatform {
         this.videoPlayer.addEventListener('ended', () => this.onVideoEnded());
         this.videoPlayer.addEventListener('play', () => this.updatePlayPauseButton());
         this.videoPlayer.addEventListener('pause', () => this.updatePlayPauseButton());
+        this.videoPlayer.addEventListener('loadedmetadata', () => this.onVideoLoaded());
 
         this.progressBar.addEventListener('click', (e) => this.seek(e));
 
@@ -98,6 +102,9 @@ class YouLearningPlatform {
         this.notesEditor.addEventListener('input', () => this.saveToStorage());
 
         this.saveApiKeyBtn.addEventListener('click', () => this.saveApiKey());
+
+        // Add window resize listener for responsive video
+        window.addEventListener('resize', () => this.updateVideoSize());
     }
 
     setupResize() {
@@ -130,6 +137,9 @@ class YouLearningPlatform {
             this.resizeDivider.style.left = `${newVideoWidth}px`;
 
             this.currentSplit = (newVideoWidth / totalWidth) * 100;
+            
+            // Update video size when resizing
+            this.updateVideoSize();
         }
     }
 
@@ -199,7 +209,8 @@ class YouLearningPlatform {
             type: file.type,
             duration: 0,
             uploadDate: new Date().toISOString(),
-            blobUrl: videoUrl
+            blobUrl: videoUrl,
+            file: file // Store the file reference for recreation if needed
         };
 
         const tempVideo = document.createElement('video');
@@ -267,14 +278,23 @@ class YouLearningPlatform {
         });
     }
 
-    loadVideo(video) {
-        if (this.currentVideo && this.currentVideo.blobUrl) {
-            URL.revokeObjectURL(this.currentVideo.blobUrl);
+    async loadVideo(video) {
+        // Check if the blob URL is still valid
+        if (video.blobUrl && !(await this.isBlobUrlValid(video.blobUrl))) {
+            // Recreate the blob URL if it was revoked
+            if (video.file) {
+                video.blobUrl = URL.createObjectURL(video.file);
+                video.url = video.blobUrl;
+            }
         }
 
         this.currentVideo = video;
         this.videoPlayer.src = video.url;
         this.videoPlayer.load();
+        
+        // Restore the previous playback speed
+        this.videoPlayer.playbackRate = this.currentPlaybackRate;
+        this.speedSelect.value = this.currentPlaybackRate;
 
         this.videoTitle.textContent = video.name;
         const durationText = video.duration > 0 ? 
@@ -284,6 +304,9 @@ class YouLearningPlatform {
 
         this.updateVideoList();
         this.showNotification(`Loaded: ${video.name}`, 'success');
+        
+        // Update video size after loading
+        setTimeout(() => this.updateVideoSize(), 100);
 
         this.videoPlayer.onerror = () => {
             console.error('Video error:', this.videoPlayer.error);
@@ -308,6 +331,17 @@ class YouLearningPlatform {
             
             this.showNotification(errorMessage, 'error');
         };
+    }
+
+    isBlobUrlValid(url) {
+        try {
+            // Try to fetch the URL to check if it's still valid
+            return fetch(url, { method: 'HEAD' })
+                .then(response => response.ok)
+                .catch(() => false);
+        } catch (error) {
+            return false;
+        }
     }
 
     removeVideo(videoId) {
@@ -356,7 +390,8 @@ class YouLearningPlatform {
     }
 
     changeSpeed(speed) {
-        this.videoPlayer.playbackRate = parseFloat(speed);
+        this.currentPlaybackRate = parseFloat(speed);
+        this.videoPlayer.playbackRate = this.currentPlaybackRate;
     }
 
     toggleMute() {
@@ -383,9 +418,15 @@ class YouLearningPlatform {
 
     toggleFullscreen() {
         if (!document.fullscreenElement) {
-            this.videoPlayerWrapper.requestFullscreen();
+            this.videoPlayerWrapper.requestFullscreen().then(() => {
+                // Update video size when entering fullscreen
+                setTimeout(() => this.updateVideoSize(), 100);
+            });
         } else {
-            document.exitFullscreen();
+            document.exitFullscreen().then(() => {
+                // Update video size when exiting fullscreen
+                setTimeout(() => this.updateVideoSize(), 100);
+            });
         }
     }
 
@@ -397,6 +438,63 @@ class YouLearningPlatform {
 
     updateDuration() {
         this.durationEl.textContent = this.formatDuration(this.videoPlayer.duration);
+    }
+
+    onVideoLoaded() {
+        // Update aspect ratio when video metadata is loaded
+        if (this.videoPlayer.videoWidth && this.videoPlayer.videoHeight) {
+            this.videoAspectRatio = this.videoPlayer.videoWidth / this.videoPlayer.videoHeight;
+        }
+        this.updateVideoSize();
+    }
+
+    setupResponsiveVideo() {
+        // Set initial video size
+        setTimeout(() => this.updateVideoSize(), 100);
+        
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', () => {
+            setTimeout(() => this.updateVideoSize(), 100);
+        });
+    }
+
+    updateVideoSize() {
+        if (!this.videoPlayerWrapper) return;
+
+        // Check if we're in fullscreen mode
+        if (document.fullscreenElement) {
+            // In fullscreen, use the entire screen
+            this.videoPlayerWrapper.style.width = '100vw';
+            this.videoPlayerWrapper.style.height = '100vh';
+            this.videoPlayerWrapper.style.maxWidth = 'none';
+            this.videoPlayerWrapper.style.maxHeight = 'none';
+            this.videoPlayerWrapper.style.margin = '0';
+            return;
+        }
+
+        const containerRect = this.videoSection.getBoundingClientRect();
+        const availableWidth = containerRect.width - 32; // Account for padding
+        const availableHeight = window.innerHeight - containerRect.top - 150; // Account for header and video info
+
+        // If no video is loaded, set a default aspect ratio
+        const aspectRatio = this.currentVideo ? this.videoAspectRatio : 16/9;
+        
+        // Calculate optimal size based on aspect ratio
+        let optimalWidth = availableWidth;
+        let optimalHeight = optimalWidth / aspectRatio;
+
+        // If height is too large, calculate based on height instead
+        if (optimalHeight > availableHeight) {
+            optimalHeight = availableHeight;
+            optimalWidth = optimalHeight * aspectRatio;
+        }
+
+        // Apply the calculated size
+        this.videoPlayerWrapper.style.width = `${optimalWidth}px`;
+        this.videoPlayerWrapper.style.height = `${optimalHeight}px`;
+        this.videoPlayerWrapper.style.maxWidth = '100%';
+        this.videoPlayerWrapper.style.maxHeight = `${availableHeight}px`;
+        this.videoPlayerWrapper.style.margin = '0 auto'; // Center the video
     }
 
     seek(event) {
@@ -428,6 +526,9 @@ class YouLearningPlatform {
             this.resizeDivider.style.display = 'none';
             this.panelToggleBtn.classList.add('active');
         }
+        
+        // Update video size after panel toggle
+        setTimeout(() => this.updateVideoSize(), 100);
     }
 
     switchTool(toolName) {
