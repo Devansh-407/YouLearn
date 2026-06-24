@@ -188,7 +188,7 @@ class YouLearningPlatform {
     }
 
     isValidVideoFile(file) {
-        const validTypes = ['video/mp4', 'video/webm', 'video/x-matroska', 'video/mkv', 'video/x-mkv'];
+        const validTypes = ['video/mp4', 'video/webm', 'video/x-matroska', 'video/mkv', 'video/x-mkv', 'application/octet-stream'];
         const validExtensions = ['.mp4', '.webm', '.mkv'];
         
         const hasValidType = validTypes.includes(file.type);
